@@ -1,10 +1,13 @@
 import React from 'react'
-import { Map } from 'immutable';
+import { Map, List } from 'immutable';
 import {
     Editor,
     EditorState,
     DefaultDraftBlockRenderMap,
     RichUtils,
+    convertToRaw,
+    genKey,
+    ContentBlock,
 } from 'draft-js';
 import TodoBlock from './TodoBlock'
 
@@ -16,41 +19,41 @@ const BLOCK = {
 /*
 Returns default block-level metadata for various block type. Empty object otherwise.
 */
-const getDefaultBlockData = (blockType, initialData = {}) => {
-    switch (blockType) {
-        case TODO_TYPE: return { checked: false };
-        default: return initialData;
-    }
-};
+// const getDefaultBlockData = (blockType, initialData = {}) => {
+//     switch (blockType) {
+//         case TODO_TYPE: return { checked: false };
+//         default: return initialData;
+//     }
+// };
 
 /*
 Changes the block type of the current block.
 */
-const resetBlockType = (editorState, newType = BLOCK.UNSTYLED) => {
-    const contentState = editorState.getCurrentContent();
-    const selectionState = editorState.getSelection();
-    const key = selectionState.getStartKey();
-    const blockMap = contentState.getBlockMap();
-    const block = blockMap.get(key);
-    let newText = '';
-    const text = block.getText();
-    if (block.getLength() >= 2) {
-        newText = text.substr(1);
-    }
-    const newBlock = block.merge({
-        text: newText,
-        type: newType,
-        data: getDefaultBlockData(newType),
-    });
-    const newContentState = contentState.merge({
-        blockMap: blockMap.set(key, newBlock),
-        selectionAfter: selectionState.merge({
-            anchorOffset: 0,
-            focusOffset: 0,
-        }),
-    });
-    return EditorState.push(editorState, newContentState, 'change-block-type');
-};
+// const resetBlockType = (editorState, newType = BLOCK.UNSTYLED) => {
+//     const contentState = editorState.getCurrentContent();
+//     const selectionState = editorState.getSelection();
+//     const key = selectionState.getStartKey();
+//     const blockMap = contentState.getBlockMap();
+//     const block = blockMap.get(key);
+//     let newText = 'dsdsd';
+//     const text = block.getText();
+//     if (block.getLength() >= 2) {
+//         newText = text.substr(1);
+//     }
+//     const newBlock = block.merge({
+//         text: newText,
+//         type: newType,
+//         data: getDefaultBlockData(newType),
+//     });
+//     const newContentState = contentState.merge({
+//         blockMap: blockMap.set(key, newBlock),
+//         selectionAfter: selectionState.merge({
+//             anchorOffset: 4,
+//             focusOffset: 4,
+//         }),
+//     });
+//     return EditorState.push(editorState, newContentState, 'change-block-type');
+// };
 
 /*
 A higher-order function.
@@ -103,27 +106,27 @@ class TodoEditor extends React.Component {
             case TODO_TYPE:
                 return 'block block-todo';
             default:
-                return 'block';
+                return '';
         }
     }
 
     handleBeforeInput = (str) => {
-        if (str !== ']') {
-            return false;
-        }
-        const { editorState } = this.state;
-        /* Get the selection */
-        const selection = editorState.getSelection();
+        // if (str !== ']') {
+        //     return false;
+        // }
+        // const { editorState } = this.state;
+        // /* Get the selection */
+        // const selection = editorState.getSelection();
 
-        /* Get the current block */
-        const currentBlock = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
-        const blockType = currentBlock.getType();
-        const blockLength = currentBlock.getLength();
-        if (blockLength === 1 && currentBlock.getText() === '[') {
-            this.onChange(resetBlockType(editorState, blockType !== TODO_TYPE ? TODO_TYPE : 'unstyled'));
-            return true;
-        }
-        return false;
+        // /* Get the current block */
+        // const currentBlock = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
+        // const blockType = currentBlock.getType();
+        // const blockLength = currentBlock.getLength();
+        // if (blockLength === 1 && currentBlock.getText() === '[') {
+        //     this.onChange(resetBlockType(editorState, blockType !== TODO_TYPE ? TODO_TYPE : 'unstyled'));
+        //     return true;
+        // }
+        // return false;
     }
 
     handleKeyCommand = (command) => {
@@ -141,32 +144,107 @@ class TodoEditor extends React.Component {
     }
 
     handleSubmit = () => {
-        const str = '[]'
-        this.handleBeforeInput(str)
+        const str = this.state.todo
+        const selection = this.state.editorState.getSelection();
+        this.onChange(addNewBlockAt(
+            this.state.editorState,
+            str,
+            selection.getAnchorKey(),
+            'todo'
+        ))
     }
 
     render() {
+        const rawJson = convertToRaw(this.state.editorState.getCurrentContent());
+        const jsonStr = JSON.stringify(rawJson, null, 1);
         return (
             <React.Fragment>
-                <Editor
-                    ref="editor"
-                    placeholder="Write here. Type [ ] to add a todo ..."
-                    editorState={this.state.editorState}
-                    onChange={this.onChange}
-                    blockStyleFn={this.blockStyleFn}
-                    blockRenderMap={this.blockRenderMap}
-                    blockRendererFn={this.blockRendererFn}
-                    handleBeforeInput={this.handleBeforeInput}
-                    handleKeyCommand={this.handleKeyCommand}
-                />
+                <div onClick={(e) => this.refs.editor.focus()} className="editor-container">
+                    <Editor
+                        ref="editor"
+                        // placeholder="Write here."
+                        editorState={this.state.editorState}
+                        onChange={this.onChange}
+                        blockStyleFn={this.blockStyleFn}
+                        blockRenderMap={this.blockRenderMap}
+                        blockRendererFn={this.blockRendererFn}
+                        handleBeforeInput={this.handleBeforeInput}
+                        handleKeyCommand={this.handleKeyCommand}
+                    />
+                </div>
                 <br />
                 <div>
                     <input type="text" name="todo" onChange={this.handleChange} />
                     <button onClick={this.handleSubmit}>Submit</button>
                 </div>
+                <div>
+                    <pre style={{ background: 'darkturquoise', padding: 5 }}>
+                        <code>
+                            {jsonStr}
+                        </code>
+                    </pre>
+                </div>
             </React.Fragment>
         );
     }
 }
+
+const addNewBlockAt = (
+    editorState,
+    text = '',
+    pivotBlockKey,
+    newBlockType = 'unstyled',
+    initialData = new Map({})
+) => {
+    const content = editorState.getCurrentContent();
+    const blockMap = content.getBlockMap();
+    const block = blockMap.get(pivotBlockKey);
+
+    if (!block) {
+        throw new Error(`The pivot key - ${pivotBlockKey} is not present in blockMap.`);
+    }
+
+    const blocksBefore = blockMap.toSeq().takeUntil((v) => (v === block));
+    const blocksAfter = blockMap.toSeq().skipUntil((v) => (v === block)).rest();
+    const newBlockKey = genKey();
+
+    const newBlock = new ContentBlock({
+        key: newBlockKey,
+        type: newBlockType,
+        text: text,
+        characterList: new List(),
+        depth: 0,
+        data: initialData,
+    });
+
+    let newBlockMap
+    if (block.getText().length === 0) {
+        newBlockMap = blocksBefore.concat(
+            [[newBlockKey, newBlock]],
+            // blocksAfter
+        ).toOrderedMap();
+    } else {
+        newBlockMap = blocksBefore.concat(
+            [[pivotBlockKey, block], [newBlockKey, newBlock]],
+            // blocksAfter
+        ).toOrderedMap();
+    }
+
+    const selection = editorState.getSelection();
+
+    const newContent = content.merge({
+        blockMap: newBlockMap,
+        selectionBefore: selection,
+        selectionAfter: selection.merge({
+            anchorKey: newBlockKey,
+            anchorOffset: 0,
+            focusKey: newBlockKey,
+            focusOffset: 0,
+            isBackward: false,
+        }),
+    });
+
+    return EditorState.moveFocusToEnd(EditorState.push(editorState, newContent, 'split-block'));
+};
 
 export default TodoEditor

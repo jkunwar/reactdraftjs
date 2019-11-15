@@ -23,16 +23,23 @@ body {
     margin: 10px 0;
 }
 
+select {
+    margin: 2px;
+    height: 30px;
+    border: 1px solid;
+    background-color: lightblue;
+}
+
 
 .block {
-  margin-bottom: 10px;
+  margin: 5px 3px;
 }
 
 .block-todo {
   position: relative;
-  padding: 10px 20px;
+  padding: 8px 20px;
   border: 1px solid #f7f7f7;
-  margin-bottom: 10px;
+  margin: 5px 3px;
   /*box-shadow: inset 0px 0px 10px 2px #f7f7f7;*/
   border-radius: 4px;
 }
@@ -46,4 +53,13 @@ body {
 
 .block-todo-completed {
   text-decoration: line-through;
+}
+
+figure {
+  margin: 0;
+}
+
+.todo-item {
+  display: flex;
+  justify-content: space-between;
 }

@@ -13,7 +13,6 @@ const updateDataOfBlock = (editorState, block, newData) => {
     return EditorState.push(editorState, newContentState, 'change-block-type');
 };
 
-
 class TodoBlock extends React.Component {
     constructor(props) {
         super(props);
@@ -33,14 +32,17 @@ class TodoBlock extends React.Component {
     }
 
     render() {
-        console.log(this.props)
+        console.log(this.props.block.getText())
         const data = this.props.block.getData();
         const checked = data.get('checked') === true;
         return (
-            <div className={checked ? 'block-todo-completed' : ''}>
-                <input type="checkbox" checked={checked} onChange={this.updateData} />
-                <EditorBlock {...this.props} />
-            </div>
+            <span className={checked ? 'todo-item block-todo-completed' : 'todo-item'}>
+                <span>
+                    {/* <input type="checkbox" checked={checked} onChange={this.updateData} /> */}
+                    <EditorBlock {...this.props} />
+                </span>
+                {/* <span>delete</span> */}
+            </span>
         );
     }
 }
